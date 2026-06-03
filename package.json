@@ -1,0 +1,7 @@
+{
+  "name": "glacial-risk-nepal",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ]
+}

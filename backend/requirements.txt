@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+torch
+segmentation-models-pytorch
+rasterio
+gdal
+geopandas
+shapely
+scikit-learn
+celery
+redis
+psycopg2-binary
+python-dotenv
+httpx
+twilio
