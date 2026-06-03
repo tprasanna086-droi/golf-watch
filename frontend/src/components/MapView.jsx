@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import AlertsBar from './AlertsBar';
 
 const NepalCenter = [28.3949, 84.1240];
 
@@ -95,6 +96,8 @@ export default function MapView({ lakes = [], alerts = [], onLakeClick }) {
           );
         })}
       </MapContainer>
+
+      <AlertsBar alerts={alerts} />
     </div>
   );
 }

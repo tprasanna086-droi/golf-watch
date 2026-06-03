@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import MapView from './components/MapView';
 import LakeDetail from './components/LakeDetail';
+import AlertsFeed from './components/AlertsFeed';
 import { fetchLakes, fetchActiveAlerts, fetchHistory } from './api/client';
 import './App.css';
 
@@ -46,6 +47,19 @@ function App() {
     loadInitialData();
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const alertsData = await fetchActiveAlerts();
+        setAlerts(alertsData);
+      } catch (err) {
+        console.error('Failed to poll active alerts:', err);
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLakeClick = async (lake) => {
     setSelectedLake(lake);
     setLoadingHistory(true);
@@ -87,11 +101,17 @@ function App() {
         onLakeClick={handleLakeClick}
       />
 
-      <LakeDetail
-        lake={selectedLake}
-        history={lakeHistory}
-        loading={loadingHistory}
-      />
+      {selectedLake ? (
+        <LakeDetail
+          lake={selectedLake}
+          history={lakeHistory}
+          loading={loadingHistory}
+        />
+      ) : (
+        <div className="detail-panel">
+          <AlertsFeed alerts={alerts} onLakeClick={handleLakeClick} />
+        </div>
+      )}
     </div>
   );
 }

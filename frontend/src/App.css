@@ -350,3 +350,127 @@
 .leaflet-tooltip-top::before {
   border-top-color: var(--border) !important;
 }
+
+/* Alerts bar */
+.alerts-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 1000;
+  background: rgba(10, 14, 26, 0.92);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alerts-bar-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
+.alerts-ticker {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1;
+}
+
+.alerts-ticker::-webkit-scrollbar { display: none; }
+
+.alert-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.alert-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Alerts feed */
+.alerts-feed {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.alerts-feed-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.alerts-feed-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.alerts-count-badge {
+  background: var(--accent);
+  color: #000;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.alert-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.alert-row:hover .alert-lake-name {
+  color: var(--accent);
+}
+
+.alert-icon { font-size: 14px; flex-shrink: 0; }
+
+.alert-lake-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  transition: color 0.15s;
+}
+
+.alert-delta {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.alert-time {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.no-alerts {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 40px 0;
+}
+
