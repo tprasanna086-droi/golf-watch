@@ -1,19 +1,105 @@
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import Sidebar from './components/Sidebar';
+import MapView from './components/MapView';
+import LakeDetail from './components/LakeDetail';
+import { fetchLakes, fetchActiveAlerts, fetchHistory } from './api/client';
+import './App.css';
 
 function App() {
+  const [lakes, setLakes] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [selectedLake, setSelectedLake] = useState(null);
+  const [lakeHistory, setLakeHistory] = useState([]);
+  const [loadingLakes, setLoadingLakes] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function loadInitialData() {
+      try {
+        setLoadingLakes(true);
+        const [lakesData, alertsData] = await Promise.all([
+          fetchLakes(),
+          fetchActiveAlerts(),
+        ]);
+        setLakes(lakesData);
+        setAlerts(alertsData);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to load initial data:', err);
+        setError('Could not connect to API server. Operating in offline demo mode.');
+        // Set some dummy data for previewing UI if API is down
+        setLakes([
+          { id: 1, name: 'Tsho Rolpa', district: 'Dolakha', basin: 'Koshi', lat: 27.8617, lon: 86.4772, initial_area_ha: 1.54, risk_class: 'critical' },
+          { id: 2, name: 'Imja Tsho', district: 'Solukhumbu', basin: 'Koshi', lat: 27.8983, lon: 86.9350, initial_area_ha: 1.01, risk_class: 'critical' },
+          { id: 3, name: 'Thulagi', district: 'Manang', basin: 'Gandaki', lat: 28.4878, lon: 84.4653, initial_area_ha: 0.76, risk_class: 'critical' },
+          { id: 4, name: 'Tilicho Lake', district: 'Manang', basin: 'Gandaki', lat: 28.6833, lon: 83.8500, initial_area_ha: 4.80, risk_class: 'low' },
+        ]);
+        setAlerts([
+          { id: 1, lake_id: 1, name: 'Tsho Rolpa', lat: 27.8617, lon: 86.4772, alert_level: 'emergency' }
+        ]);
+      } finally {
+        setLoadingLakes(false);
+      }
+    }
+
+    loadInitialData();
+  }, []);
+
+  const handleLakeClick = async (lake) => {
+    setSelectedLake(lake);
+    setLoadingHistory(true);
+    try {
+      const historyData = await fetchHistory(lake.id, 12);
+      setLakeHistory(historyData);
+    } catch (err) {
+      console.error(`Failed to fetch history for lake ${lake.id}:`, err);
+      // Fallback dummy history if API is offline
+      setLakeHistory([
+        { observed_at: '2025-06-01', area_ha: lake.initial_area_ha * 0.95, ndwi_mean: 0.45, turbidity_index: 0.12 },
+        { observed_at: '2025-08-01', area_ha: lake.initial_area_ha * 1.02, ndwi_mean: 0.48, turbidity_index: 0.15 },
+        { observed_at: '2025-10-01', area_ha: lake.initial_area_ha * 1.10, ndwi_mean: 0.52, turbidity_index: 0.18 },
+        { observed_at: '2025-12-01', area_ha: lake.initial_area_ha * 1.25, ndwi_mean: 0.56, turbidity_index: 0.22 },
+      ]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   return (
-    <div className="app-container">
-      <div className="hero">
-        <div className="pulse-ring"></div>
-        <h1 className="title">Glacial Risk Nepal — Live Monitor</h1>
-        <p className="subtitle">System initializing…</p>
-        <div className="status-bar">
-          <span className="status-dot"></span>
-          <span className="status-text">Connecting to satellite feeds</span>
+    <div className="app-grid-container">
+      {error && (
+        <div className="offline-banner">
+          <span>⚠️ {error}</span>
         </div>
-      </div>
+      )}
+      
+      <Sidebar
+        lakes={lakes}
+        selectedLake={selectedLake}
+        onLakeClick={handleLakeClick}
+        loading={loadingLakes}
+      />
+
+      <main className="map-container-wrapper">
+        <div className="map-overlay-title">
+          <h1>Nepal GLOF Early Warning System</h1>
+          <p>Sentinel-2 U-Net Anomaly Monitor</p>
+        </div>
+        <MapView
+          lakes={lakes}
+          alerts={alerts}
+          onLakeClick={handleLakeClick}
+        />
+      </main>
+
+      <LakeDetail
+        lake={selectedLake}
+        history={lakeHistory}
+        loading={loadingHistory}
+      />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
