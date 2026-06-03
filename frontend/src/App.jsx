@@ -67,7 +67,7 @@ function App() {
   };
 
   return (
-    <div className="app-grid-container">
+    <div className="app">
       {error && (
         <div className="offline-banner">
           <span>⚠️ {error}</span>
@@ -81,17 +81,11 @@ function App() {
         loading={loadingLakes}
       />
 
-      <main className="map-container-wrapper">
-        <div className="map-overlay-title">
-          <h1>Nepal GLOF Early Warning System</h1>
-          <p>Sentinel-2 U-Net Anomaly Monitor</p>
-        </div>
-        <MapView
-          lakes={lakes}
-          alerts={alerts}
-          onLakeClick={handleLakeClick}
-        />
-      </main>
+      <MapView
+        lakes={lakes}
+        alerts={alerts}
+        onLakeClick={handleLakeClick}
+      />
 
       <LakeDetail
         lake={selectedLake}

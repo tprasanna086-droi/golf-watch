@@ -1,74 +1,87 @@
-import React from 'react';
-
-const riskColors = {
-  critical: '#ff2d2d',
-  high: '#ff8c00',
-  moderate: '#ffd700',
-  low: '#00c853',
-};
+import React, { useState } from 'react';
 
 export default function Sidebar({ lakes = [], selectedLake, onLakeClick, loading }) {
-  const getBadgeStyle = (riskClass) => {
-    const color = riskColors[riskClass?.toLowerCase()] || '#94a3b8';
-    return {
-      backgroundColor: `${color}15`,
-      color: color,
-      border: `1px solid ${color}30`,
-    };
-  };
+  const [filter, setFilter] = useState('all');
+
+  const filteredLakes = lakes.filter((lake) => {
+    if (filter === 'all') return true;
+    if (filter === 'critical') return lake.risk_class?.toLowerCase() === 'critical';
+    if (filter === 'high') return lake.risk_class?.toLowerCase() === 'high';
+    if (filter === 'watch') {
+      return (
+        lake.risk_class?.toLowerCase() === 'moderate' ||
+        lake.risk_class?.toLowerCase() === 'low'
+      );
+    }
+    return true;
+  });
 
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h2>Glacial Lakes</h2>
-        <span className="count-badge">{lakes.length} monitored</span>
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon">🏔️</div>
+          <div className="sidebar-logo-text">glof<span>-watch</span></div>
+        </div>
+        
+        <div className="sidebar-filter">
+          <button
+            className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+            onClick={() => setFilter('all')}
+          >
+            All
+          </button>
+          <button
+            className={`filter-btn ${filter === 'critical' ? 'active' : ''}`}
+            onClick={() => setFilter('critical')}
+          >
+            Critical
+          </button>
+          <button
+            className={`filter-btn ${filter === 'high' ? 'active' : ''}`}
+            onClick={() => setFilter('high')}
+          >
+            High
+          </button>
+          <button
+            className={`filter-btn ${filter === 'watch' ? 'active' : ''}`}
+            onClick={() => setFilter('watch')}
+          >
+            Watch
+          </button>
+        </div>
       </div>
 
-      <div className="sidebar-content">
+      <div className="sidebar-list">
         {loading ? (
-          <div className="loading-state">
-            <span className="spinner"></span>
-            <p>Loading lakes...</p>
-          </div>
-        ) : lakes.length === 0 ? (
-          <div className="empty-state">No lakes found</div>
+          <div className="loading-text">Loading lakes...</div>
+        ) : filteredLakes.length === 0 ? (
+          <div className="loading-text">No lakes match filter</div>
         ) : (
-          <div className="lake-list">
-            {lakes.map((lake) => {
-              const isSelected = selectedLake && selectedLake.id === lake.id;
-              return (
-                <div
-                  key={lake.id}
-                  className={`lake-card ${isSelected ? 'selected' : ''}`}
-                  onClick={() => onLakeClick && onLakeClick(lake)}
-                >
-                  <div className="lake-card-header">
-                    <h3>{lake.name}</h3>
-                    <span
-                      className="risk-badge"
-                      style={getBadgeStyle(lake.risk_class)}
-                    >
-                      {lake.risk_class}
-                    </span>
-                  </div>
-                  <div className="lake-card-body">
-                    <div className="info-row">
-                      <span className="info-label">District:</span>
-                      <span className="info-value">{lake.district}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="info-label">Basin:</span>
-                      <span className="info-value">{lake.basin}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="info-label">Initial Area:</span>
-                      <span className="info-value">{lake.initial_area_ha} ha</span>
-                    </div>
-                  </div>
+          filteredLakes.map((lake) => {
+            const isSelected = selectedLake && selectedLake.id === lake.id;
+            const riskClass = lake.risk_class?.toLowerCase() || 'low';
+            
+            return (
+              <div
+                key={lake.id}
+                className={`lake-card ${isSelected ? 'selected' : ''}`}
+                onClick={() => onLakeClick && onLakeClick(lake)}
+              >
+                <div className="lake-card-header">
+                  <div className="lake-card-name">{lake.name}</div>
+                  <span className={`risk-badge ${riskClass}`}>
+                    {lake.risk_class}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
+                <div className="lake-card-meta">
+                  <span>{lake.district}</span>
+                  <span>•</span>
+                  <span>{lake.initial_area_ha?.toFixed(2)} ha</span>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
     </aside>

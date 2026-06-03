@@ -27,7 +27,12 @@ export default function MapView({ lakes = [], alerts = [], onLakeClick }) {
   };
 
   return (
-    <div style={{ height: '100vh', width: '100%', position: 'relative' }}>
+    <div className="map-container" style={{ width: '100%', height: '100%' }}>
+      <div className="map-header">
+        <div className="map-header-dot"></div>
+        <div className="map-header-text">Live Monitoring</div>
+      </div>
+
       <MapContainer
         center={NepalCenter}
         zoom={7}
