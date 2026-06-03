@@ -48,3 +48,14 @@ CREATE TABLE IF NOT EXISTS alerts (
 CREATE INDEX IF NOT EXISTS idx_lakes_geom ON lakes USING GIST(geom);
 CREATE INDEX IF NOT EXISTS idx_observations_lake_date ON lake_observations(lake_id, observed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_alerts_lake ON alerts(lake_id, triggered_at DESC);
+
+-- Table: alert_recipients
+-- Phone numbers of authorities and field officers to notify when alert is triggered
+CREATE TABLE IF NOT EXISTS alert_recipients (
+    id           SERIAL PRIMARY KEY,
+    name         TEXT,
+    phone        TEXT NOT NULL UNIQUE,
+    active       BOOLEAN DEFAULT TRUE,
+    created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+

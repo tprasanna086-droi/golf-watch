@@ -24,6 +24,7 @@ from ml.preprocess import (
 from ml.unet import get_unet_model, run_inference, mask_to_polygon
 from ml.change_detection import compute_feature_vector
 from ml.anomaly import fit_isolation_forest, score_observation, classify_alert_level
+from alerts_dispatch import dispatch_alert
 
 # Load .env from backend root
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
@@ -244,7 +245,8 @@ def run_lake_pipeline(lake_id: int, tif_path: str, observed_at: str):
                                 INSERT INTO alerts
                                     (lake_id, anomaly_score, area_delta_pct,
                                      alert_level, message)
-                                VALUES (%s, %s, %s, %s, %s);
+                                VALUES (%s, %s, %s, %s, %s)
+                                RETURNING id;
                                 """,
                                 (
                                     lake_id,
@@ -256,11 +258,25 @@ def run_lake_pipeline(lake_id: int, tif_path: str, observed_at: str):
                                     f"anomaly score {anomaly_score:.3f}",
                                 ),
                             )
+                            alert_db_id = cur.fetchone()[0]
                         conn.commit()
                         logger.warning(
                             "ALERT [%s] for lake %d: score=%.3f, area_delta=%.1f%%",
                             alert_level, lake_id, anomaly_score, fv["area_delta_pct"],
                         )
+
+                        try:
+                            dispatch_alert(
+                                lake_id=lake_id,
+                                lake_name=str(lake_id),  # placeholder
+                                district="Nepal",         # placeholder
+                                alert_level=alert_level,
+                                area_delta_pct=fv["area_delta_pct"],
+                                anomaly_score=anomaly_score,
+                                alert_db_id=alert_db_id
+                            )
+                        except Exception as dispatch_err:
+                            logger.error("Failed to dispatch SMS alert: %s", dispatch_err)
 
         finally:
             conn.close()
