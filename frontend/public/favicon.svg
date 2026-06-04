@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="GLOF Watch">
+  <rect width="64" height="64" fill="#ffffff"/>
+  <ellipse cx="32" cy="52" rx="20" ry="4.5" fill="#10b981"/>
+  <path fill="#059669" d="M32 10 L52 46 L12 46 Z"/>
+</svg>
