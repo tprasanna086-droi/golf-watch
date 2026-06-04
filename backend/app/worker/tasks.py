@@ -28,6 +28,7 @@ from app.pipeline.sentinel_fetcher import (
     fetch_sentinel2_tile,
     initialize_gee,
 )
+from app.services.sms import load_sms_config, send_alert_sms
 from app.worker.celery_app import celery_app
 
 _BACKEND_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -354,3 +355,164 @@ def check_anomalies(lake_id: str) -> dict[str, Any]:
 
     logger.warning("Created %s alert for lake %s (Z-score %.3f)", severity, lake_id, z_score)
     return {"lake_id": lake_id, "z_score": z_score, "alert_created": True}
+
+
+def _parse_contributing_factors(message: Optional[str]) -> list[str]:
+    """Split a stored alert message into contributing factor lines."""
+    if not message or not message.strip():
+        return ["GLOF risk threshold exceeded"]
+    parts = [part.strip() for part in message.split(";") if part.strip()]
+    return parts if parts else [message.strip()]
+
+
+def _fetch_alert_for_sms(alert_id: str) -> dict[str, Any]:
+    """Load alert fields and lake name required for SMS dispatch."""
+    alert_uuid = UUID(alert_id)
+    conn = _get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT
+                    a.id,
+                    a.lake_id,
+                    a.severity,
+                    a.area_delta_km2,
+                    a.anomaly_score,
+                    a.message,
+                    a.sms_sent,
+                    l.name AS lake_name
+                FROM alerts a
+                JOIN lakes l ON l.id = a.lake_id
+                WHERE a.id = %s
+                """,
+                (str(alert_uuid),),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise ValueError(f"Alert with id {alert_id} not found")
+            return dict(row)
+    finally:
+        conn.close()
+
+
+def _fetch_latest_area_km2(lake_id: str) -> float:
+    """Return the most recent observed lake area, or 0.0 if none exists."""
+    conn = _get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT area_km2
+                FROM lake_observations
+                WHERE lake_id = %s AND area_km2 IS NOT NULL
+                ORDER BY observed_at DESC
+                LIMIT 1
+                """,
+                (lake_id,),
+            )
+            row = cur.fetchone()
+            if row is None or row[0] is None:
+                return 0.0
+            return float(row[0])
+    finally:
+        conn.close()
+
+
+def _mark_alert_sms_sent(alert_id: str) -> None:
+    """Set sms_sent=true on the alert row."""
+    conn = _get_db_connection()
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE alerts
+                    SET sms_sent = TRUE
+                    WHERE id = %s
+                    """,
+                    (alert_id,),
+                )
+    finally:
+        conn.close()
+
+
+@celery_app.task(name="glof_watch.tasks.dispatch_sms_alert")
+def dispatch_sms_alert(alert_id: str) -> dict[str, Any]:
+    """
+    Load an alert from the database and dispatch Twilio SMS notifications.
+
+    Updates ``sms_sent`` when at least one message is delivered successfully.
+    """
+    logger.info("Dispatching SMS for alert %s", alert_id)
+
+    try:
+        alert = _fetch_alert_for_sms(alert_id)
+    except ValueError as exc:
+        logger.error("%s", exc)
+        raise
+
+    if alert.get("sms_sent"):
+        logger.info("Alert %s already has sms_sent=true; skipping dispatch", alert_id)
+        return {
+            "alert_id": alert_id,
+            "sms_sent": False,
+            "message_sids": [],
+            "skipped": "already_sent",
+        }
+
+    severity = str(alert.get("severity") or "watch")
+    lake_name = str(alert["lake_name"])
+    area_delta_km2 = float(alert.get("area_delta_km2") or 0.0)
+    z_score = float(alert.get("anomaly_score") or 0.0)
+    contributing_factors = _parse_contributing_factors(alert.get("message"))
+
+    area_km2 = _fetch_latest_area_km2(str(alert["lake_id"]))
+    if area_km2 == 0.0:
+        logger.warning(
+            "No area_km2 observation for lake %s; using delta-only area estimate",
+            alert["lake_id"],
+        )
+        area_km2 = max(area_delta_km2, 0.0)
+
+    try:
+        config = load_sms_config()
+    except ValueError as exc:
+        logger.error("SMS config error for alert %s: %s", alert_id, exc)
+        raise
+
+    message_sids = send_alert_sms(
+        config=config,
+        lake_name=lake_name,
+        severity=severity,
+        area_km2=area_km2,
+        area_delta_km2=area_delta_km2,
+        z_score=z_score,
+        contributing_factors=contributing_factors,
+    )
+
+    if not message_sids:
+        logger.info(
+            "No SMS sent for alert %s (severity %s, min_severity %s)",
+            alert_id,
+            severity,
+            config.min_severity,
+        )
+        return {
+            "alert_id": alert_id,
+            "sms_sent": False,
+            "message_sids": [],
+            "skipped": "below_min_severity_or_send_failed",
+        }
+
+    _mark_alert_sms_sent(alert_id)
+    logger.info(
+        "SMS dispatch succeeded for alert %s (%d message(s))",
+        alert_id,
+        len(message_sids),
+    )
+    return {
+        "alert_id": alert_id,
+        "sms_sent": True,
+        "message_sids": message_sids,
+    }
