@@ -85,16 +85,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# TODO: implement app.routers.lakes and remove the ImportError guard when ready.
-try:
-    from app.routers import lakes as lakes_router
+from app.routers import alerts as alerts_router
+from app.routers import lakes as lakes_router
 
-    app.include_router(lakes_router.router, prefix="/api/v1")
-    logger.info("Mounted lakes router at /api/v1")
-except ImportError:
-    logger.warning(
-        "app.routers.lakes not found; lakes routes will not be mounted yet"
-    )
+app.include_router(lakes_router.router, prefix="/api/v1")
+app.include_router(alerts_router.router, prefix="/api/v1")
+logger.info("Mounted lakes and alerts routers at /api/v1")
 
 
 @app.get("/health")
