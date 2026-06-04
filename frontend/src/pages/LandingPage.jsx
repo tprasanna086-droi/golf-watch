@@ -178,7 +178,7 @@ export default function LandingPage() {
             Open Dashboard
           </Link>
           <a
-            href="https://github.com"
+            href="https://github.com/tprasanna086-droi/golf-watch"
             className="btn btn--ghost-light"
             target="_blank"
             rel="noopener noreferrer"
