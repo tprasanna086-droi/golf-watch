@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Dashboard from './pages/Dashboard';
 import LandingPage from './pages/LandingPage';
 
 function App() {
@@ -6,12 +7,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route
-          path="/dashboard"
-          element={
-            <div className="route-placeholder">Dashboard coming soon</div>
-          }
-        />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route
           path="/lake/:id"
           element={
