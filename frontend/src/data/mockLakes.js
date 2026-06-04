@@ -82,6 +82,10 @@ export const MOCK_LAKES = [
 ];
 
 export function getLakeById(id) {
-  const lakeId = typeof id === 'string' ? Number.parseInt(id, 10) : id;
-  return MOCK_LAKES.find((lake) => lake.id === lakeId) ?? null;
+  if (id == null) return null;
+  const numericId = Number.parseInt(id, 10);
+  if (!Number.isNaN(numericId)) {
+    return MOCK_LAKES.find((lake) => lake.id === numericId) ?? null;
+  }
+  return MOCK_LAKES.find((lake) => String(lake.id) === String(id)) ?? null;
 }

@@ -1,61 +1,45 @@
-import axios from 'axios';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+/**
+ * Perform a JSON API request against the GLOF Watch backend.
+ *
+ * @param {string} path - Path beginning with / (e.g. /api/v1/lakes)
+ * @param {RequestInit} [options]
+ * @returns {Promise<unknown>}
+ */
+export async function apiFetch(path, options = {}) {
+  const url = `${BASE_URL.replace(/\/$/, '')}${path}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
 
-const client = axios.create({
-  baseURL,
-});
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
 
-export default client;
-
-export async function fetchLakes(filters = {}) {
-  try {
-    const response = await client.get('/api/lakes', { params: filters });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching lakes:', error);
-    throw error;
+  const text = await response.text();
+  let body = null;
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = text;
+    }
   }
+
+  if (!response.ok) {
+    const detail =
+      typeof body === 'object' && body !== null
+        ? body.detail ?? JSON.stringify(body)
+        : String(body ?? '');
+    throw new Error(
+      `API ${response.status} ${response.statusText}: ${detail}`,
+    );
+  }
+
+  return body;
 }
 
-export async function fetchLake(id) {
-  try {
-    const response = await client.get(`/api/lakes/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching lake ${id}:`, error);
-    throw error;
-  }
-}
-
-export async function fetchAlerts(filters = {}) {
-  try {
-    const response = await client.get('/api/alerts', { params: filters });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching alerts:', error);
-    throw error;
-  }
-}
-
-export async function fetchActiveAlerts() {
-  try {
-    const response = await client.get('/api/alerts/active');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching active alerts:', error);
-    throw error;
-  }
-}
-
-export async function fetchHistory(lakeId, months) {
-  try {
-    const response = await client.get(`/api/observations/${lakeId}/history`, {
-      params: { months }
-    });
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching history for lake ${lakeId}:`, error);
-    throw error;
-  }
-}
+export { BASE_URL };

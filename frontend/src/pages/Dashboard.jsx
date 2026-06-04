@@ -8,7 +8,12 @@ import {
 } from 'react-leaflet';
 import { ChevronRight, Search, Settings } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
-import { MOCK_LAKES } from '../data/mockLakes';
+import { triggerAnalysis } from '../api/lakes';
+import Spinner from '../components/Spinner';
+import Toast from '../components/Toast';
+import { useAlertsSummary } from '../hooks/useAlertsSummary';
+import { useLake } from '../hooks/useLake';
+import { useLakes } from '../hooks/useLakes';
 import './Dashboard.css';
 
 const NEPAL_CENTER = [28.3949, 84.1240];
@@ -73,10 +78,19 @@ function RiskBadge({ riskClass, large = false }) {
   );
 }
 
-function getLakeMetrics(lake) {
-  const seed = lake.id;
+function getLakeMetrics(lake, latestObs) {
+  if (latestObs) {
+    return {
+      area: `${(latestObs.area_km2 ?? lake.area_km2 ?? 0).toFixed(2)} km²`,
+      ndwi: (latestObs.ndwi_mean ?? 0).toFixed(2),
+      turbidity: (latestObs.turbidity_index ?? 0).toFixed(1),
+      irregularity: (latestObs.shape_irregularity ?? 0.32).toFixed(2),
+    };
+  }
+
+  const seed = typeof lake.id === 'number' ? lake.id : 1;
   return {
-    area: `${lake.area_km2.toFixed(2)} km²`,
+    area: `${(lake.area_km2 ?? 0).toFixed(2)} km²`,
     ndwi: (0.42 + seed * 0.03).toFixed(2),
     turbidity: (8 + seed * 1.2).toFixed(1),
     irregularity: (0.18 + seed * 0.02).toFixed(2),
@@ -165,32 +179,78 @@ function AreaSparkline() {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { lakes, loading: lakesLoading, error: lakesError, usingMock } = useLakes();
+  const { summary, refetch: refetchSummary } = useAlertsSummary();
   const [selectedLake, setSelectedLake] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [mapStyle, setMapStyle] = useState('street');
+  const [toast, setToast] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const { observations: selectedObservations } = useLake(
+    selectedLake?.id ?? null,
+  );
 
   const filteredLakes = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const allowedRisks = FILTER_TO_RISK[activeFilter];
 
-    return MOCK_LAKES.filter((lake) => {
+    return lakes.filter((lake) => {
       const matchesSearch =
         !q ||
         lake.name.toLowerCase().includes(q) ||
-        lake.district.toLowerCase().includes(q) ||
-        lake.basin.toLowerCase().includes(q);
+        (lake.district || '').toLowerCase().includes(q) ||
+        (lake.basin || '').toLowerCase().includes(q);
       const matchesFilter =
         !allowedRisks || allowedRisks.includes(lake.risk_class);
       return matchesSearch && matchesFilter;
     });
-  }, [searchQuery, activeFilter]);
+  }, [lakes, searchQuery, activeFilter]);
+
+  const latestObs = selectedObservations?.[0];
+  const metrics = selectedLake
+    ? getLakeMetrics(selectedLake, latestObs)
+    : null;
+
+  const alertCount = summary?.total_unresolved ?? 0;
+  const alertLabel =
+    alertCount === 1 ? '1 Active Alert' : `${alertCount} Active Alerts`;
+
+  const handleRunAnalysis = async () => {
+    if (!selectedLake) return;
+    setAnalyzing(true);
+    try {
+      const result = await triggerAnalysis(selectedLake.id);
+      if (result.alert_created) {
+        setToast({
+          message: `Analysis complete — ${result.severity} alert created`,
+          type: 'success',
+        });
+      } else {
+        setToast({ message: 'No anomaly detected', type: 'success' });
+      }
+      refetchSummary();
+    } catch {
+      setToast({
+        message: 'Analysis failed — backend unavailable',
+        type: 'error',
+      });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const tile = mapStyle === 'satellite' ? TILE_SATELLITE : TILE_STREET;
-  const metrics = selectedLake ? getLakeMetrics(selectedLake) : null;
 
   return (
     <div className="dashboard">
+      {lakesError && !usingMock && (
+        <div className="dashboard-error-banner" role="alert">
+          Could not reach API: {lakesError.message}
+        </div>
+      )}
+
       <header className="dashboard-nav">
         <Link to="/" className="dashboard-nav__brand">
           <MountainIcon size={28} />
@@ -203,7 +263,7 @@ export default function Dashboard() {
         </div>
 
         <div className="dashboard-nav__actions">
-          <span className="dashboard-nav__alert-badge">3 Active Alerts</span>
+          <span className="dashboard-nav__alert-badge">{alertLabel}</span>
           <button
             type="button"
             className="dashboard-nav__settings"
@@ -242,28 +302,34 @@ export default function Dashboard() {
               ))}
             </div>
 
-            <ul className="lake-list">
-              {filteredLakes.map((lake) => (
-                <li key={lake.id}>
-                  <button
-                    type="button"
-                    className={`lake-item${selectedLake?.id === lake.id ? ' lake-item--selected' : ''}`}
-                    onClick={() => setSelectedLake(lake)}
-                  >
-                    <div className="lake-item__main">
-                      <p className="lake-item__name">{lake.name}</p>
-                      <p className="lake-item__district">{lake.district}</p>
-                      <RiskBadge riskClass={lake.risk_class} />
-                    </div>
-                    <ChevronRight
-                      className="lake-item__arrow"
-                      size={16}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </li>
-              ))}
-            </ul>
+            {lakesLoading ? (
+              <div className="dashboard-sidebar__loading">
+                <Spinner centered />
+              </div>
+            ) : (
+              <ul className="lake-list">
+                {filteredLakes.map((lake) => (
+                  <li key={lake.id}>
+                    <button
+                      type="button"
+                      className={`lake-item${selectedLake?.id === lake.id ? ' lake-item--selected' : ''}`}
+                      onClick={() => setSelectedLake(lake)}
+                    >
+                      <div className="lake-item__main">
+                        <p className="lake-item__name">{lake.name}</p>
+                        <p className="lake-item__district">{lake.district}</p>
+                        <RiskBadge riskClass={lake.risk_class} />
+                      </div>
+                      <ChevronRight
+                        className="lake-item__arrow"
+                        size={16}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </aside>
 
@@ -297,7 +363,7 @@ export default function Dashboard() {
               attribution={tile.attribution}
             />
             <LakeMapMarkers
-              lakes={MOCK_LAKES}
+              lakes={lakes}
               selectedLake={selectedLake}
               onSelect={setSelectedLake}
             />
@@ -353,8 +419,13 @@ export default function Dashboard() {
               </div>
 
               <div className="dashboard-detail__actions">
-                <button type="button" className="dashboard-btn dashboard-btn--primary">
-                  Run Analysis Now
+                <button
+                  type="button"
+                  className="dashboard-btn dashboard-btn--primary"
+                  onClick={handleRunAnalysis}
+                  disabled={analyzing}
+                >
+                  {analyzing ? 'Running…' : 'Run Analysis Now'}
                 </button>
                 <button
                   type="button"
@@ -377,6 +448,14 @@ export default function Dashboard() {
           </span>
         </div>
       </div>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

@@ -489,6 +489,70 @@
   background: var(--color-green-bg);
 }
 
+.lake-detail__chart-loading,
+.lake-detail__tab-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.lake-detail__empty-row,
+.lake-detail__empty-alerts {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 24px;
+}
+
+.lake-detail__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 48px;
+  max-width: 400px;
+}
+
+.lake-detail__actions .dashboard-btn {
+  width: 100%;
+  padding: 12px 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.lake-detail__actions .dashboard-btn--primary {
+  background: var(--color-green);
+  color: #ffffff;
+  border-color: var(--color-green);
+}
+
+.lake-detail__actions .dashboard-btn--primary:hover:not(:disabled) {
+  background: #047857;
+}
+
+.lake-detail__actions .dashboard-btn--primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.lake-detail__actions .dashboard-btn--ghost {
+  background: transparent;
+  color: var(--color-green);
+  border-color: var(--color-green);
+}
+
+.lake-detail__actions .dashboard-btn--ghost:hover {
+  background: var(--color-green-bg);
+}
+
 .lake-detail__not-found {
   min-height: 60vh;
   display: flex;
