@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   CircleMarker,
   MapContainer,
@@ -8,6 +8,7 @@ import {
 } from 'react-leaflet';
 import { ChevronRight, Search, Settings } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+import { MOCK_LAKES } from '../data/mockLakes';
 import './Dashboard.css';
 
 const NEPAL_CENTER = [28.3949, 84.1240];
@@ -24,89 +25,6 @@ const TILE_SATELLITE = {
   attribution:
     '&copy; <a href="https://www.esri.com/">Esri</a> — Esri, Maxar, Earthstar Geographics',
 };
-
-const MOCK_LAKES = [
-  {
-    id: 1,
-    name: 'Imja Tsho',
-    district: 'Solukhumbu',
-    basin: 'Koshi',
-    risk_class: 'critical',
-    area_km2: 1.35,
-    lat: 27.8975,
-    lon: 86.9175,
-  },
-  {
-    id: 2,
-    name: 'Thulagi Lake',
-    district: 'Manang',
-    basin: 'Gandaki',
-    risk_class: 'high',
-    area_km2: 0.89,
-    lat: 28.5,
-    lon: 84.4833,
-  },
-  {
-    id: 3,
-    name: 'Lower Barun',
-    district: 'Sankhuwasabha',
-    basin: 'Koshi',
-    risk_class: 'high',
-    area_km2: 1.12,
-    lat: 27.8,
-    lon: 87.1167,
-  },
-  {
-    id: 4,
-    name: 'Dig Tsho',
-    district: 'Solukhumbu',
-    basin: 'Koshi',
-    risk_class: 'medium',
-    area_km2: 0.45,
-    lat: 27.8667,
-    lon: 86.7333,
-  },
-  {
-    id: 5,
-    name: 'Sabai Tsho',
-    district: 'Taplejung',
-    basin: 'Koshi',
-    risk_class: 'medium',
-    area_km2: 0.67,
-    lat: 27.7167,
-    lon: 87.85,
-  },
-  {
-    id: 6,
-    name: 'Tsho Rolpa',
-    district: 'Dolakha',
-    basin: 'Bagmati',
-    risk_class: 'critical',
-    area_km2: 1.65,
-    lat: 27.8833,
-    lon: 86.4833,
-  },
-  {
-    id: 7,
-    name: 'Chamlang South',
-    district: 'Sankhuwasabha',
-    basin: 'Koshi',
-    risk_class: 'low',
-    area_km2: 0.23,
-    lat: 27.7667,
-    lon: 87.1667,
-  },
-  {
-    id: 8,
-    name: 'Lumding Lake',
-    district: 'Mustang',
-    basin: 'Gandaki',
-    risk_class: 'low',
-    area_km2: 0.31,
-    lat: 28.9167,
-    lon: 84.1667,
-  },
-];
 
 const FILTER_CHIPS = ['All', 'Watch', 'Warning', 'Emergency'];
 
@@ -246,6 +164,7 @@ function AreaSparkline() {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [selectedLake, setSelectedLake] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
@@ -437,7 +356,11 @@ export default function Dashboard() {
                 <button type="button" className="dashboard-btn dashboard-btn--primary">
                   Run Analysis Now
                 </button>
-                <button type="button" className="dashboard-btn dashboard-btn--ghost">
+                <button
+                  type="button"
+                  className="dashboard-btn dashboard-btn--ghost"
+                  onClick={() => navigate(`/lake/${selectedLake.id}`)}
+                >
                   View Full Report →
                 </button>
               </div>
