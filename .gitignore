@@ -44,3 +44,11 @@ Thumbs.db
 coverage/
 .pytest_cache/
 .mypy_cache/
+
+# Model weights & satellite imagery
+*.pth
+*.pt
+*.onnx
+*.tif
+*.tiff
+*.jp2
