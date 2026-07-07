@@ -7,7 +7,7 @@ Thank you for your interest in contributing to the GLOF early warning system for
 | Tool | Version |
 |------|---------|
 | Python | 3.11+ |
-| Node.js | 18+ |
+| Node.js | 20.19+ |
 | PostgreSQL | 14+ with PostGIS extension |
 | Redis | 6+ |
 
