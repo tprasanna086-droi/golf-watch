@@ -45,7 +45,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
-      - /tmp/glof_tiles:/tmp/glof_tiles
+      - ${GLOF_TILES_DIR:-./data/glof_tiles}:/tmp/glof_tiles
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   worker:
@@ -61,7 +61,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
-      - /tmp/glof_tiles:/tmp/glof_tiles
+      - ${GLOF_TILES_DIR:-./data/glof_tiles}:/tmp/glof_tiles
     command: celery -A tasks.celery_app worker --loglevel=info
 
   beat:

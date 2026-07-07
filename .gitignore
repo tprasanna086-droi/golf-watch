@@ -52,3 +52,6 @@ coverage/
 *.tif
 *.tiff
 *.jp2
+
+# Generated data
+data/
