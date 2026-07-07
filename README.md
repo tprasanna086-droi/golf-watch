@@ -36,8 +36,8 @@ The system operates as an end-to-end data processing and visualization pipeline:
 ### Setup
 1. **Clone the repo:**
    ```bash
-   git clone https://github.com/tprasanna086-droi/golf-watch.git
-   cd golf-watch
+    git clone https://github.com/tprasanna086-droi/glof-watch.git
+    cd glof-watch
    ```
 
 2. **Configure backend variables:**

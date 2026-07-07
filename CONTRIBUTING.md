@@ -16,8 +16,8 @@ Thank you for your interest in contributing to the GLOF early warning system for
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/tprasanna086-droi/golf-watch.git
-cd golf-watch
+git clone https://github.com/tprasanna086-droi/glof-watch.git
+cd glof-watch
 ```
 
 ### 2. Backend setup
