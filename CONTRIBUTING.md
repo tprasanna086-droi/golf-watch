@@ -41,7 +41,10 @@ cp .env.example .env
 #   DATABASE_URL, REDIS_URL, TWILIO_ACCOUNT_SID, etc.
 
 # Initialize the database schema
+# Docker Compose users: the schema auto-applies on first `docker-compose up`
+# (via docker-entrypoint-initdb.d). For local non-Docker setups, run:
 python db/init_db.py
+# init_db.py reads backend/db/schema.sql and is idempotent — safe to re-run.
 
 # Seed the lakes table with sample data
 python db/seed_lakes.py

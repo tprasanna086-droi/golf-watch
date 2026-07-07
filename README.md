@@ -57,12 +57,12 @@ The system operates as an end-to-end data processing and visualization pipeline:
    docker-compose up --build
    ```
 
-5. **Initialize and seed the database:**
-   In a separate terminal, execute schema initialization and data seeding:
+5. **Seed the database (first time only):**
+   The database schema is auto-applied on first `docker-compose up` (via `docker-entrypoint-initdb.d/01_schema.sql`). No manual init is needed.
    ```bash
-   docker-compose exec backend python db/init_db.py
    docker-compose exec backend python db/seed_lakes.py
    ```
+   If you ever need to re-apply the schema (e.g. after dropping tables), run `docker-compose exec backend python db/init_db.py` — it is idempotent and safe to re-run.
 
 6. **Start the frontend application:**
    ```bash
